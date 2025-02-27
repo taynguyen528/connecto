@@ -14,10 +14,10 @@ const OTPVerifyPage = () => {
           Two-Step Verification
         </p>
         <p className="mb-2 opacity-80">
-          We sent a verification code to your mobile. Enter the code from the
-          mobile in the field below.
+          We have sent a verification code to your email. Enter the code from
+          your email in the box below.
         </p>
-        <p className="opacity-90">******9763</p>
+        {/* <p className="opacity-90">******9763</p> */}
       </div>
       <div className="flex flex-col items-center text-dark-100">
         <form className="flex flex-col gap-4">

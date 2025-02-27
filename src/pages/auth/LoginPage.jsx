@@ -1,11 +1,54 @@
 import FormFiled from "@components/FormFiled";
 import TextInput from "@components/FormInputs/TextInput";
-import { Button } from "@mui/material";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { Button, CircularProgress } from "@mui/material";
+import { openSnackbar } from "@redux/slices/snackbarSlice";
+import { useLoginMutation } from "@services/rootApi";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { Link } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { Link, useNavigate } from "react-router-dom";
+import * as yup from "yup";
 
 const LoginPage = () => {
-  const { control } = useForm();
+  const [login, { data = {}, isLoading, error, isError, isSuccess }] =
+    useLoginMutation();
+  const formSchema = yup.object().shape({
+    email: yup
+      .string()
+      .matches(
+        /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+        "Email is not valid",
+      )
+      .required(),
+    password: yup.string().required("Required"),
+  });
+
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const {
+    control,
+    formState: { errors },
+    handleSubmit,
+  } = useForm({
+    resolver: yupResolver(formSchema),
+  });
+
+  function onSubmit(formData) {
+    login(formData);
+  }
+
+  useEffect(() => {
+    if (isError) {
+      dispatch(openSnackbar({ type: "error", message: error?.data?.message }));
+    }
+
+    if (isSuccess) {
+      dispatch(openSnackbar({ message: data.message }));
+      navigate("/verify-otp");
+    }
+  }, [isError, error, dispatch, data.message, isSuccess, navigate]);
 
   return (
     <div>
@@ -15,13 +58,14 @@ const LoginPage = () => {
           Please sign in to your account and start the adventure
         </p>
       </div>
-      <form className="flex flex-col gap-4">
+      <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
         <FormFiled
           name="email"
           label="Email or Username"
           control={control}
           Component={TextInput}
           placeholder={"Username or email"}
+          error={errors["email"]}
         />
         <FormFiled
           name="password"
@@ -35,8 +79,12 @@ const LoginPage = () => {
           Component={TextInput}
           type="password"
           placeholder={"Password"}
+          error={errors["password"]}
         />
-        <Button variant="contained">Sign in</Button>
+        <Button variant="contained" type="submit">
+          Sign in
+          {isLoading && <CircularProgress size={15} className="ml-1" />}
+        </Button>
       </form>
       <p className="mt-4 text-center">
         New on out platform?{" "}

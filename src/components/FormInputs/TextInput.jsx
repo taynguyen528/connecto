@@ -1,6 +1,13 @@
 import { TextField } from "@mui/material";
 
-const TextInput = ({ onChange, value, name, type = "text", placeholder }) => {
+const TextInput = ({
+  onChange,
+  value,
+  name,
+  type = "text",
+  placeholder,
+  error,
+}) => {
   return (
     <TextField
       slotProps={{
@@ -13,6 +20,7 @@ const TextInput = ({ onChange, value, name, type = "text", placeholder }) => {
       onChange={onChange}
       type={type}
       placeholder={placeholder}
+      error={error}
     />
   );
 };
