@@ -14,7 +14,7 @@ const RootLayout = () => {
   const dispatch = useDispatch();
 
   return (
-    <div>
+    <div className="text-dark-100">
       <Suspense fallback={<p>Loading...</p>}>
         <Outlet />
       </Suspense>
