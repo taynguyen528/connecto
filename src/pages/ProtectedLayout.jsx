@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { saveUserInfo } from "@redux/slices/authSlice";
 import Header from "@components/Header";
+import Loading from "@components/Loading";
 
 const ProtectedLayout = () => {
   const res = useGetAuthUserQuery();
@@ -15,9 +16,8 @@ const ProtectedLayout = () => {
     }
   }, [res.isSuccess, res.data, dispatch]);
 
-
   if (res.isLoading) {
-    return <p>Loading...</p>;
+    return <Loading />;
   }
 
   return (

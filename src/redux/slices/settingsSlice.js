@@ -1,7 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
-  isShowDrawer: true,
+  isShowDrawer: false,
 };
 
 export const settingsSlice = createSlice({

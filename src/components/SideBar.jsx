@@ -1,3 +1,4 @@
+import { useDetectLayout } from "@hooks/index";
 import {
   HomeOutlined,
   Hub,
@@ -6,14 +7,7 @@ import {
   People,
   Translate,
 } from "@mui/icons-material";
-import {
-  Drawer,
-  List,
-  ListSubheader,
-  styled,
-  useMediaQuery,
-  useTheme,
-} from "@mui/material";
+import { Drawer, List, ListSubheader, styled } from "@mui/material";
 import { toggleDrawer } from "@redux/slices/settingsSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
@@ -27,7 +21,7 @@ const ListStyled = styled(List)`
 const SidebarContent = () => {
   return (
     <div className="flex w-64 flex-col gap-4">
-      <ListStyled className="flex flex-col bg-white shadow">
+      <ListStyled className="card flex flex-col">
         <Link to="/" className="flex items-center gap-1">
           <HomeOutlined fontSize="small" /> New Feeds
         </Link>
@@ -42,7 +36,7 @@ const SidebarContent = () => {
         </Link>
       </ListStyled>
 
-      <ListStyled className="flex flex-col bg-white shadow">
+      <ListStyled className="card flex flex-col">
         <ListSubheader className="mb-2 !px-0 !leading-none">
           Settings
         </ListSubheader>
@@ -58,12 +52,11 @@ const SidebarContent = () => {
 };
 
 const SideBar = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const isShowDrawer = useSelector((store) => store.settings.isShowDrawer);
   const dispatch = useDispatch();
+  const { isMediumLayout } = useDetectLayout();
 
-  return isMobile ? (
+  return isMediumLayout ? (
     <Drawer
       open={isShowDrawer}
       onClose={() => dispatch(toggleDrawer())}
