@@ -31,8 +31,13 @@ const LoginPage = () => {
     control,
     formState: { errors },
     handleSubmit,
+    getValues,
   } = useForm({
     resolver: yupResolver(formSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
   });
 
   function onSubmit(formData) {
@@ -46,9 +51,13 @@ const LoginPage = () => {
 
     if (isSuccess) {
       dispatch(openSnackbar({ message: data.message }));
-      navigate("/verify-otp");
+      navigate("/verify-otp", {
+        state: {
+          email: getValues("email"),
+        },
+      });
     }
-  }, [isError, error, dispatch, data.message, isSuccess, navigate]);
+  }, [isError, error, dispatch, data.message, isSuccess, navigate, getValues]);
 
   return (
     <div>

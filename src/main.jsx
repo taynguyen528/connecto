@@ -2,7 +2,6 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import RootLayout from "@pages/RootLayout";
-import ModalProvider from "@contexts/ModalProvider";
 import { lazy } from "react";
 import { ThemeProvider } from "@mui/material";
 import theme from "./configs/muiConfig";
@@ -11,7 +10,13 @@ import AuthLayout from "@pages/auth/AuthLayout";
 import LoginPage from "@pages/auth/LoginPage";
 import OTPVerifyPage from "@pages/auth/OTPVerifyPage";
 import { Provider } from "react-redux";
-import { store } from "@redux/store";
+import { persistor, store } from "@redux/store";
+import ProtectedLayout from "@pages/ProtectedLayout";
+import MessagePage from "@pages/MessagePage";
+import { PersistGate } from "redux-persist/integration/react";
+import Dialog from "@components/Dialog";
+import Loading from "@components/Loading";
+import SearchUserPage from "@pages/SearchUsersPage";
 
 const HomePage = lazy(() => import("@pages/HomePage"));
 
@@ -20,9 +25,23 @@ const router = createBrowserRouter([
     element: <RootLayout />,
     children: [
       {
-        path: "/",
-        element: <HomePage />,
+        element: <ProtectedLayout />,
+        children: [
+          {
+            path: "/",
+            element: <HomePage />,
+          },
+          {
+            path: "/message",
+            element: <MessagePage />,
+          },
+          {
+            path: "/search/users",
+            element: <SearchUserPage />,
+          },
+        ],
       },
+
       {
         element: <AuthLayout />,
         children: [
@@ -46,11 +65,11 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById("root")).render(
   <Provider store={store}>
-    <ThemeProvider theme={theme}>
-      <ModalProvider>
+    <PersistGate loading={<Loading />} persistor={persistor}>
+      <ThemeProvider theme={theme}>
         <RouterProvider router={router} />
-      </ModalProvider>
-    </ThemeProvider>
-    ,
+        <Dialog />
+      </ThemeProvider>
+    </PersistGate>
   </Provider>,
 );

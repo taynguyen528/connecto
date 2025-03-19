@@ -1,11 +1,42 @@
 import FormFiled from "@components/FormFiled";
 import OTPInput from "@components/FormInputs/OTPInput";
-import { Button } from "@mui/material";
+import { Button, CircularProgress } from "@mui/material";
+import { login } from "@redux/slices/authSlice";
+import { openSnackbar } from "@redux/slices/snackbarSlice";
+import { useVerifyOTPMutation } from "@services/rootApi";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { Link } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 const OTPVerifyPage = () => {
-  const { control } = useForm();
+  const location = useLocation();
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const [verifyOTP, { data, isLoading, isError, error, isSuccess }] =
+    useVerifyOTPMutation();
+
+  const { control, handleSubmit } = useForm({
+    defaultValues: {
+      otp: "",
+    },
+  });
+
+  const onSubmit = (formData) => {
+    verifyOTP({ otp: formData.otp, email: location?.state?.email });
+  };
+
+  useEffect(() => {
+    if (isError) {
+      dispatch(openSnackbar({ type: "error", message: error?.data?.message }));
+    }
+
+    if (isSuccess) {
+      dispatch(login(data));
+      navigate("/");
+    }
+  }, [isError, error, dispatch, data?.message, isSuccess, navigate, data]);
 
   return (
     <div>
@@ -20,7 +51,7 @@ const OTPVerifyPage = () => {
         {/* <p className="opacity-90">******9763</p> */}
       </div>
       <div className="flex flex-col items-center text-dark-100">
-        <form className="flex flex-col gap-4">
+        <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
           <FormFiled
             name="otp"
             label="Type your 6 digit security code"
@@ -28,7 +59,10 @@ const OTPVerifyPage = () => {
             Component={OTPInput}
           />
 
-          <Button variant="contained">Verify my account</Button>
+          <Button variant="contained" type="submit">
+            {isLoading && <CircularProgress size={15} className="ml-1" />}
+            Verify my account
+          </Button>
         </form>
         <p className="mt-4">
           Didn&apos;t get the code?
