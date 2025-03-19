@@ -13,7 +13,7 @@ export default defineConfig({
       "@libs": path.resolve(__dirname, "src/libs"),
       "@pages": path.resolve(__dirname, "src/pages"),
       "@hooks": path.resolve(__dirname, "src/hooks"),
-      "@contexts": path.resolve(__dirname, "src/contexts"),
+      "@context": path.resolve(__dirname, "src/context"),
       "@redux": path.resolve(__dirname, "src/redux"),
       "@services": path.resolve(__dirname, "src/services"),
     },

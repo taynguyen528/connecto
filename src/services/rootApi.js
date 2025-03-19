@@ -14,38 +14,39 @@ const baseQuery = fetchBaseQuery({
 const baseQueryWithReauth = async (args, api, extraOptions) => {
   let result = await baseQuery(args, api, extraOptions);
 
-  if (
-    result?.error?.status === 401 &&
-    result?.error?.data?.message === "Token has expired."
-  ) {
-    const refreshToken = api.getState().auth.refreshToken;
+  if (result?.error?.status === 401) {
+    if (result?.error?.data?.message === "Token has expired.") {
+      const refreshToken = api.getState().auth.refreshToken;
 
-    if (refreshToken) {
-      const refreshResult = await baseQuery(
-        {
-          url: "/refresh-token",
-          body: { refreshToken },
-          method: "POST",
-        },
-        api,
-        extraOptions,
-      );
-
-      const newAccessToken = refreshResult?.data?.accessToken;
-
-      if (newAccessToken) {
-        api.dispatch(
-          login({
-            accessToken: newAccessToken,
-            refreshToken,
-          }),
+      if (refreshToken) {
+        const refreshResult = await baseQuery(
+          {
+            url: "/refresh-token",
+            body: { refreshToken },
+            method: "POST",
+          },
+          api,
+          extraOptions,
         );
 
-        result = await baseQuery(args, api, extraOptions);
-      } else {
-        api.dispatch(logOut());
-        window.location.href = "/login";
+        const newAccessToken = refreshResult?.data?.accessToken;
+
+        if (newAccessToken) {
+          api.dispatch(
+            login({
+              accessToken: newAccessToken,
+              refreshToken,
+            }),
+          );
+
+          result = await baseQuery(args, api, extraOptions);
+        } else {
+          api.dispatch(logOut());
+          window.location.href = "/login";
+        }
       }
+    } else {
+      window.location.href = "/login";
     }
   }
 
@@ -55,6 +56,7 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
 export const rootApi = createApi({
   reducerPath: "api",
   baseQuery: baseQueryWithReauth,
+  tagTypes: ["POSTS", "USERS", "PENDING_FRIEND_REQUEST"],
   endpoints: (builder) => {
     return {
       register: builder.mutation({
@@ -115,6 +117,78 @@ export const rootApi = createApi({
         },
         providesTags: [{ type: "POSTS" }],
       }),
+      searchUsers: builder.query({
+        query: ({ limit, offset, searchQuery } = {}) => {
+          const encodedQuery = encodeURIComponent(searchQuery.trim());
+          return {
+            url: `/search/users/${encodedQuery}`,
+            // method: 'GET',
+            params: { limit, offset },
+          };
+        },
+        providesTags: (result) =>
+          result
+            ? [
+                ...result.users.map(({ _id }) => ({ type: "USERS", id: _id })),
+                { type: "USERS", id: "LIST" },
+              ]
+            : [{ type: "USERS", id: "LIST" }],
+      }),
+      sendFriendRequest: builder.mutation({
+        query: (userId) => {
+          return {
+            url: "/friends/request",
+            method: "POST",
+            body: {
+              friendId: userId,
+            },
+          };
+        },
+        invalidatesTags: (result, error, args) => [{ type: "USERS", id: args }],
+      }),
+      getPendingFriendRequests: builder.query({
+        query: () => "/friends/pending",
+        providesTags: (result) =>
+          result
+            ? [
+                ...result.map(({ _id }) => ({
+                  type: "PENDING_FRIEND_REQUEST",
+                  id: _id,
+                })),
+                { type: "PENDING_FRIEND_REQUEST", id: "LIST" },
+              ]
+            : [{ type: "PENDING_FRIEND_REQUEST", id: "LIST" }],
+      }),
+      acceptFriendRequest: builder.mutation({
+        query: (userId) => {
+          return {
+            url: "/friends/accept",
+            method: "POST",
+            body: {
+              friendId: userId,
+            },
+          };
+        },
+        invalidatesTags: (result, error, args) => [
+          { type: "USERS", id: args },
+          { type: "PENDING_FRIEND_REQUEST", id: args },
+        ],
+      }),
+      cancelFriendRequest: builder.mutation({
+        query: (userId) => {
+          return {
+            url: "/friends/cancel",
+            method: "POST",
+            body: {
+              friendId: userId,
+            },
+          };
+        },
+        invalidatesTags: (result, error, args) => [
+          { type: "USERS", id: args },
+          { type: "PENDING_FRIEND_REQUEST", id: args },
+        ],
+      }),
     };
   },
 });
@@ -127,4 +201,9 @@ export const {
   useCreatePostMutation,
   useRefreshTokenMutation,
   useGetPostsQuery,
+  useSearchUsersQuery,
+  useSendFriendRequestMutation,
+  useGetPendingFriendRequestsQuery,
+  useAcceptFriendRequestMutation,
+  useCancelFriendRequestMutation,
 } = rootApi;
