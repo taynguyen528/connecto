@@ -106,7 +106,60 @@ export const rootApi = createApi({
             body: formData,
           };
         },
-        invalidatesTags: ["POSTS"],
+        onQueryStarted: async (
+          args,
+          { dispatch, queryFulfilled, getState },
+        ) => {
+          console.log({ args });
+          const store = getState();
+          const tempId = crypto.randomUUID();
+
+          const newPost = {
+            _id: tempId,
+            likes: [],
+            comments: [],
+            content: args.get("content"),
+            author: {
+              notifications: [],
+              _id: store.auth.userInfo._id,
+              fullName: store.auth.userInfo.fullName,
+            },
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            __v: 0,
+          };
+
+          const patchResult = dispatch(
+            rootApi.util.updateQueryData(
+              "getPosts",
+              { limit: 10, offset: 0 },
+              (draft) => {
+                draft.unshift(newPost);
+              },
+            ),
+          );
+
+          try {
+            const { data } = await queryFulfilled;
+            dispatch(
+              rootApi.util.updateQueryData(
+                "getPosts",
+                { limit: 10, offset: 0 },
+                (draft) => {
+                  // console.log({ draft });
+                  // draft.unshift(newPost);
+                  const index = draft.findIndex((post) => post._id === tempId);
+                  if (index !== -1) {
+                    draft[index] = data;
+                  }
+                },
+              ),
+            );
+          } catch (error) {
+            patchResult.undo();
+          }
+        },
+        // invalidatesTags: ["POSTS"],
       }),
       getPosts: builder.query({
         query: ({ limit, offset } = {}) => {

@@ -38,6 +38,8 @@ export const useLazyLoadPosts = () => {
 
   const { data, isSuccess, isFetching } = useGetPostsQuery({ offset, limit });
   const [hasMore, setHasMore] = useState(true);
+
+  console.log("useLazyLoadPosts", { data, offset });
   const previousDataRef = useRef();
 
   useEffect(() => {
@@ -48,6 +50,7 @@ export const useLazyLoadPosts = () => {
       }
       previousDataRef.current = data;
       setPosts((prevPost) => {
+        if (offset === 0) return data;
         return [...prevPost, ...data];
       });
     }
@@ -57,7 +60,16 @@ export const useLazyLoadPosts = () => {
     setOffset((offset) => offset + limit);
   }, []);
 
-  useInfiniteScroll({ hasMore, loadMore, isFetching });
+  useInfiniteScroll({
+    hasMore,
+    loadMore,
+    isFetching,
+    offset,
+    resetFn: () => {
+      setOffset(0);
+      setHasMore(true);
+    },
+  });
 
   return { isFetching, posts };
 };
@@ -66,17 +78,25 @@ export const useInfiniteScroll = ({
   hasMore,
   loadMore,
   isFetching,
+  offset,
+  resetFn,
   threshold = 50,
   throttleMs = 500,
 }) => {
   const handleScroll = useMemo(() => {
     return throttle(() => {
-      if (!hasMore) {
-        return;
-      }
       const scrollTop = document.documentElement.scrollTop;
       const scrollHeight = document.documentElement.scrollHeight;
       const clientHeight = document.documentElement.clientHeight;
+
+      if (scrollTop < 100 && offset > 0) {
+        resetFn();
+        return;
+      }
+
+      if (!hasMore) {
+        return;
+      }
 
       if (clientHeight + scrollTop + threshold >= scrollHeight && !isFetching) {
         loadMore();
