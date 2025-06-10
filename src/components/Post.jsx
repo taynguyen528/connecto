@@ -1,14 +1,18 @@
 import { Comment, ThumbUp } from "@mui/icons-material";
 import { Avatar, Button } from "@mui/material";
+import classNames from "classnames";
 import dayjs from "dayjs";
 
 const Post = ({
+  id,
   fullName = "",
-  createAt,
+  createdAt,
   content = "",
   image,
   likes = [],
   comments = [],
+  isLiked = false,
+  onLike = () => {},
 }) => {
   return (
     <div className="card">
@@ -18,33 +22,43 @@ const Post = ({
         </Avatar>
         <div>
           <p className="font-bold">{fullName}</p>
-          <p className="text-dark-400 text-sm">
-            {dayjs(createAt).format("DD/MM/YYYY HH:mm")}
+          <p className="text-sm text-dark-400">
+            {dayjs(createdAt).format("DD/MM/YYYY HH:mm")}
           </p>
         </div>
       </div>
       <p className="mb-1">{content}</p>
       {image && <img src={image} />}
-
       <div className="my-2 flex justify-between">
         <div className="flex gap-1 text-sm">
           <ThumbUp fontSize="small" className="text-primary-main" />
           <p>{likes.length}</p>
         </div>
-        <div>
+
+        <div className="text-sm">
           <p>{comments.length} comments</p>
         </div>
       </div>
-      <div className="border-dark-300 flex border-b border-t py-1 text-sm">
-        <Button size="small" className="flex-1 !text-dark-100">
-          <ThumbUp className="mr-1" fontSize="small" /> Like
+      <div className="flex border-b border-t border-dark-300 py-1 text-sm">
+        <Button
+          size="small"
+          className={classNames("flex-1", {
+            "text-primary-main": isLiked,
+            "!text-dark-100": !isLiked,
+          })}
+          onClick={() => onLike(id)}
+        >
+          <ThumbUp
+            fontSize="small"
+            className={classNames("mr-1", { "text-primary-main": isLiked })}
+          />{" "}
+          Like
         </Button>
         <Button size="small" className="flex-1 !text-dark-100">
-          <Comment className="mr-1" fontSize="small" /> Comment
+          <Comment fontSize="small" className="mr-1" /> Comment
         </Button>
       </div>
     </div>
   );
 };
-
 export default Post;

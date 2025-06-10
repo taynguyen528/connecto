@@ -1,13 +1,14 @@
 import { socket } from "@context/SocketProvider";
 import { Check, Close } from "@mui/icons-material";
 import { Avatar } from "@mui/material";
+import {} from "@services/rootApi";
+import { useEffect } from "react";
+import Button from "./Button";
 import {
   useAcceptFriendRequestMutation,
   useCancelFriendRequestMutation,
   useGetPendingFriendRequestsQuery,
-} from "@services/rootApi";
-import { useEffect } from "react";
-import Button from "./Button";
+} from "@services/friendApi";
 
 const FriendRequestItem = ({ fullName, id }) => {
   const [acceptFriendRequest, { isLoading: isAccepting }] =
@@ -42,21 +43,6 @@ const FriendRequestItem = ({ fullName, id }) => {
           >
             Cancel
           </Button>
-
-          {/* <Button
-            variant="contained"
-            size="small"
-            onClick={() => acceptFriendRequest(id)}
-          >
-            <Check className="mr-1" fontSize="small" /> Accept
-          </Button> */}
-          {/* <Button
-            variant="outlined"
-            size="small"
-            onClick={() => cancelFriendRequest(id)}
-          >
-            <Close className="mr-1" fontSize="small" /> Cancel
-          </Button> */}
         </div>
       </div>
     </div>
@@ -64,7 +50,7 @@ const FriendRequestItem = ({ fullName, id }) => {
 };
 
 const FriendRequests = () => {
-  const { data = [], isFetching, refetch } = useGetPendingFriendRequestsQuery();
+  const { data = [], refetch } = useGetPendingFriendRequestsQuery();
 
   useEffect(() => {
     socket.on("friendRequestReceived", (data) => {

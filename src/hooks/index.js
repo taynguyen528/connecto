@@ -5,8 +5,8 @@ import { useNavigate } from "react-router-dom";
 import { useTheme } from "@emotion/react";
 import { useMediaQuery } from "@mui/material";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useGetPostsQuery } from "@services/rootApi";
 import { throttle } from "lodash";
+import { useGetPostsQuery } from "@services/postApi";
 
 export const useUserInfo = () => {
   return useSelector((state) => state.auth.userInfo);
@@ -34,30 +34,45 @@ export const useDetectLayout = () => {
 export const useLazyLoadPosts = () => {
   const [offset, setOffset] = useState(0);
   const limit = 10;
-  const [posts, setPosts] = useState([]);
-
-  const { data, isSuccess, isFetching } = useGetPostsQuery({ offset, limit });
   const [hasMore, setHasMore] = useState(true);
-  const previousDataRef = useRef();
+
+  const {
+    data = { ids: [], entities: {} },
+    isFetching,
+    refetch,
+  } = useGetPostsQuery({ offset, limit });
+
+  console.log("useLazyLoadPosts", { data, offset });
+
+  const posts = data.ids.map((id) => data.entities[id]);
+
+  const prevPostCountRef = useRef(0);
 
   useEffect(() => {
-    if (data && isSuccess && previousDataRef.current !== data) {
-      if (!data.length) {
+    if (!isFetching && data && hasMore) {
+      const currentPostCount = data.ids.length;
+      const newFetchCount = currentPostCount - prevPostCountRef.current;
+      if (newFetchCount === 0) {
         setHasMore(false);
-        return;
+      } else {
+        prevPostCountRef.current = currentPostCount;
       }
-      previousDataRef.current = data;
-      setPosts((prevPost) => {
-        return [...prevPost, ...data];
-      });
     }
-  }, [data, isSuccess]);
+  }, [data, hasMore, isFetching]);
 
   const loadMore = useCallback(() => {
     setOffset((offset) => offset + limit);
   }, []);
 
-  useInfiniteScroll({ hasMore, loadMore, isFetching });
+  useEffect(() => {
+    refetch();
+  }, [offset, refetch]);
+
+  useInfiniteScroll({
+    hasMore,
+    loadMore,
+    isFetching,
+  });
 
   return { isFetching, posts };
 };
@@ -71,12 +86,13 @@ export const useInfiniteScroll = ({
 }) => {
   const handleScroll = useMemo(() => {
     return throttle(() => {
-      if (!hasMore) {
-        return;
-      }
       const scrollTop = document.documentElement.scrollTop;
       const scrollHeight = document.documentElement.scrollHeight;
       const clientHeight = document.documentElement.clientHeight;
+
+      if (!hasMore) {
+        return;
+      }
 
       if (clientHeight + scrollTop + threshold >= scrollHeight && !isFetching) {
         loadMore();
