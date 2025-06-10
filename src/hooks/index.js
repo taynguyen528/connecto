@@ -5,8 +5,8 @@ import { useNavigate } from "react-router-dom";
 import { useTheme } from "@emotion/react";
 import { useMediaQuery } from "@mui/material";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useGetPostsQuery } from "@services/rootApi";
 import { throttle } from "lodash";
+import { useGetPostsQuery } from "@services/postApi";
 
 export const useUserInfo = () => {
   return useSelector((state) => state.auth.userInfo);
@@ -34,41 +34,44 @@ export const useDetectLayout = () => {
 export const useLazyLoadPosts = () => {
   const [offset, setOffset] = useState(0);
   const limit = 10;
-  const [posts, setPosts] = useState([]);
-
-  const { data, isSuccess, isFetching } = useGetPostsQuery({ offset, limit });
   const [hasMore, setHasMore] = useState(true);
 
+  const {
+    data = { ids: [], entities: {} },
+    isFetching,
+    refetch,
+  } = useGetPostsQuery({ offset, limit });
+
   console.log("useLazyLoadPosts", { data, offset });
-  const previousDataRef = useRef();
+
+  const posts = data.ids.map((id) => data.entities[id]);
+
+  const prevPostCountRef = useRef(0);
 
   useEffect(() => {
-    if (data && isSuccess && previousDataRef.current !== data) {
-      if (!data.length) {
+    if (!isFetching && data && hasMore) {
+      const currentPostCount = data.ids.length;
+      const newFetchCount = currentPostCount - prevPostCountRef.current;
+      if (newFetchCount === 0) {
         setHasMore(false);
-        return;
+      } else {
+        prevPostCountRef.current = currentPostCount;
       }
-      previousDataRef.current = data;
-      setPosts((prevPost) => {
-        if (offset === 0) return data;
-        return [...prevPost, ...data];
-      });
     }
-  }, [data, isSuccess]);
+  }, [data, hasMore, isFetching]);
 
   const loadMore = useCallback(() => {
     setOffset((offset) => offset + limit);
   }, []);
 
+  useEffect(() => {
+    refetch();
+  }, [offset, refetch]);
+
   useInfiniteScroll({
     hasMore,
     loadMore,
     isFetching,
-    offset,
-    resetFn: () => {
-      setOffset(0);
-      setHasMore(true);
-    },
   });
 
   return { isFetching, posts };
@@ -78,8 +81,6 @@ export const useInfiniteScroll = ({
   hasMore,
   loadMore,
   isFetching,
-  offset,
-  resetFn,
   threshold = 50,
   throttleMs = 500,
 }) => {
@@ -88,11 +89,6 @@ export const useInfiniteScroll = ({
       const scrollTop = document.documentElement.scrollTop;
       const scrollHeight = document.documentElement.scrollHeight;
       const clientHeight = document.documentElement.clientHeight;
-
-      if (scrollTop < 100 && offset > 0) {
-        resetFn();
-        return;
-      }
 
       if (!hasMore) {
         return;
